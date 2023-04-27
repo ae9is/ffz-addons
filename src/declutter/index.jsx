@@ -84,38 +84,6 @@ class Declutter extends Addon {
       }
     });
 
-    this.settings.add("addon.declutter.highlight_only", {
-      default: DEFAULT_SETTINGS.highlight_only,
-      ui: {
-        path: "Add-Ons > Declutterer >> Testing",
-        title: "(Debug) Only highlight messages",
-        description:
-          "Only mark messages with repetition count token. (After disabling, requires page reload to re-enable)",
-        component: "setting-check-box"
-      }
-    });
-
-    this.settings.add("addon.declutter.text_color", {
-      default: DEFAULT_SETTINGS.text_color,
-      ui: {
-        path: "Add-Ons > Declutterer >> Testing",
-        title: "(Debug) Highlight color",
-        description:
-          "Text color for repetition count token",
-        component: "setting-color-box"
-      }
-    });
-
-    // Spacer for colour picker
-    // ref: https://github.com/FrankerFaceZ/Add-Ons/pull/60#discussion_r624546037
-		this.settings.addUI('addon.repetition_detector.pad-bottom', {
-			path: 'Add-Ons > Chat Repetition Detector',
-			sort: 1000,
-			component: 'setting-spacer',
-			top: '30rem',
-			force_seen: true
-		});
-
     this.set_enabled = null;
     this.ChatInput = this.fine.define("chat-input");
     this.logic.on(":enabled", this.updateButtons, this);

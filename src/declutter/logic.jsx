@@ -8,8 +8,6 @@ export const DEFAULT_SETTINGS = {
   ignore_mods: true,
   force_enable_when_mod: false,
   cache_ttl: 30,
-  highlight_only: false,
-  text_color: "#FF0000",
 }
 
 /**
@@ -30,41 +28,7 @@ export default class Logic extends Addon {
     this.inject("site");
     this.chatContext = this.chat.context;
     this.userId = this.site?.getUser()?.id;
-    const checkRepetitionAndCache = this.checkRepetitionAndCache.bind(this);
-    const repThreshold = this.settings.get('addon.declutter.repetitions_threshold') ?? DEFAULT_SETTINGS.repetitions_threshold;
     this.cacheTtl = (this.settings.get('addon.declutter.cache_ttl') ?? DEFAULT_SETTINGS.cache_ttl) * 1000;
-
-    this.RepetitionCounter = {
-      type: 'repetition_counter',
-      priority: -1000,
-
-      render: function(token, createElement) {
-        if (!token.repetitionCount) {
-          return null;
-        }
-        const textColor = this.settings.get('addon.declutter.text_color') ?? DEFAULT_SETTINGS.text_color;
-        return (<span style={{'color': textColor, 'margin-left': '1.5rem'}}>{`x${token.repetitionCount}`}</span>)
-      },
-
-      process: function(tokens, msg) {
-        if(!msg.message || msg.message === '') return tokens;
-        if(this.chatContext && this.chatContext.get('context.moderator') &&
-            !this.settings.get('addon.declutter.force_enable_when_mod')) return tokens;
-        if(this.settings.get('addon.declutter.ignore_mods') &&
-            (msg.badges.moderator || msg.badges.broadcaster)) return tokens;
-        if(!msg.repetitionCount && msg.repetitionCount !== 0) {
-          // Use one cache for all users for detecting repeat messages
-          msg.repetitionCount = checkRepetitionAndCache(0, msg.message);
-        }
-        if(msg.repetitionCount >= repThreshold) {
-          tokens.push({
-            type: 'repetition_counter',
-            repetitionCount: msg.repetitionCount
-          });
-        }
-        return tokens;
-      }
-    }
   }
 
   /**
@@ -133,12 +97,6 @@ export default class Logic extends Addon {
     this.updateConstants();
 		this.chat.context.on('changed:addon.declutter.cache_ttl', this.updateConstants, this);
     this.on("chat:receive-message", this.handleMessage, this);
-    const highlightOnly = this.settings.get('addon.declutter.highlight_only') ?? DEFAULT_SETTINGS.highlight_only;
-    if (highlightOnly) {
-      this.chat.addTokenizer(this.RepetitionCounter);
-      this.emit('chat:update-lines');
-      this.emit('chat:update-line-tokens');
-    }
   }
 
   updateConstants = () => {
@@ -156,12 +114,6 @@ export default class Logic extends Addon {
       clearInterval(this.cacheEvictionTimer);
     }
     this.cache.clear();
-    if (this.RepetitionCounter) {
-      // TODO FIXME doesn't actually remove tokenizer?
-      this.chat.removeTokenizer(this.RepetitionCounter);
-      this.emit('chat:update-lines');
-      this.emit('chat:update-line-tokens');
-    }
   }
 
   startCacheEvictionTimer = (intervalSeconds) => {
@@ -184,8 +136,6 @@ export default class Logic extends Addon {
   }
 
   handleMessage = (event) => {
-    const highlightOnly = this.settings.get('addon.declutter.highlight_only') ?? DEFAULT_SETTINGS.highlight_only;
-    if (highlightOnly) return;
     if (!event.message || event.defaultPrevented) return;
     if(this.chatContext && this.chatContext.get('context.moderator') &&
         !this.settings.get('addon.declutter.force_enable_when_mod')) return;
