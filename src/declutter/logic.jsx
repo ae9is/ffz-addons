@@ -15,7 +15,7 @@ export const DEFAULT_SETTINGS = {
  *  and performs the actual chat filtering.
  */
 export default class Logic extends Addon {
-  cache = new Map();
+  cache;
   cacheEvictionTimer;
   chatContext;
   RepetitionCounter;
@@ -66,28 +66,32 @@ export default class Logic extends Addon {
     return (2.0 * intersectionSize) / (first.length + second.length - 2);
   }
 
-  checkRepetitionAndCache = (username, message) => {
+  checkRepetitionAndCache = (message) => {
     const simThreshold = this.settings.get('addon.declutter.similarity_threshold') ?? DEFAULT_SETTINGS.similarity_threshold;
-    if(this.cache.has(username)) {
-      this.cache.get(username).expire = Date.now() + this.cacheTtl;
+    const repThreshold = this.settings.get('addon.declutter.repetitions_threshold') ?? DEFAULT_SETTINGS.repetitions_threshold;
+    if(this.cache) {
+      this.cache.expire = Date.now() + this.cacheTtl;
       let n = 1;
-      const messagesInCache = this.cache.get(username).messages;
+      const messagesInCache = this.cache.messages;
       for (let i = 0; i < messagesInCache.length; i++) {
         if(this.compareTwoStrings(message, messagesInCache[i].msg) > simThreshold / 100) {
           n++;
         }
+        if (n >= repThreshold) {
+          break;
+        }
       }
-      this.cache.get(username).messages.push({msg: message, expire: Date.now() + this.cacheTtl});
+      this.cache.messages.push({msg: message, expire: Date.now() + this.cacheTtl});
       return n;
     } else {
-      this.cache.set(username, {
-        messages:[
+      this.cache = {
+        messages: [
           {
             msg: message, expire: Date.now() + this.cacheTtl
           }
         ],
         expire: Date.now() + this.cacheTtl
-      });
+      };
       return 0;
     }
   }
@@ -113,7 +117,7 @@ export default class Logic extends Addon {
     if (this.cacheEvictionTimer) {
       clearInterval(this.cacheEvictionTimer);
     }
-    this.cache.clear();
+    this.cache = null;
   }
 
   startCacheEvictionTimer = (intervalSeconds) => {
@@ -122,14 +126,12 @@ export default class Logic extends Addon {
     }
     this.cacheEvictionTimer = setInterval(() => {
       this.log.debug("Running cache eviction cycle");
-      for (const [username, val] of this.cache) {
-        if (val.expire < Date.now()) {
-          this.cache.delete(username);
-        } else {
-          val.messages = val.messages.filter(msg => msg.expire > Date.now());
-          if (val.messages.length === 0) {
-            this.cache.delete(username);
-          }
+      if (this.cache.expire < Date.now()) {
+        this.cache = null;
+      } else {
+        this.cache.messages = this.cache.messages.filter(msg => msg.expire > Date.now());
+        if (this.cache.messages.length === 0) {
+          this.cache = null;
         }
       }
     }, intervalSeconds * 1000);
@@ -148,8 +150,7 @@ export default class Logic extends Addon {
       return;
     }
     if(!msg.repetitionCount && msg.repetitionCount !== 0) {
-      // Use one cache for all users for detecting repeat messages
-      msg.repetitionCount = this.checkRepetitionAndCache(0, msg.message);  // msg.user.id => 0
+      msg.repetitionCount = this.checkRepetitionAndCache(msg.message);
     }
     const repThreshold = this.settings.get('addon.declutter.repetitions_threshold') ?? DEFAULT_SETTINGS.repetitions_threshold;
     if(msg.repetitionCount >= repThreshold) {
