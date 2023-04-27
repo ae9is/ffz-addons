@@ -1,5 +1,5 @@
 "use strict";
-const { createElement, on, off } = FrankerFaceZ.utilities.dom;
+const { createElement } = FrankerFaceZ.utilities.dom;
 
 export const DEFAULT_SETTINGS = {
   enabled: false,
@@ -26,13 +26,8 @@ export default class Logic extends Addon {
   constructor(...args) {
     super(...args);
     this.inject("chat");
-    this.inject("chat.overrides");
-    this.inject("chat.actions");
     this.inject("settings");
-    this.inject("i18n");
     this.inject("site");
-    this.inject("site.fine");
-    this.injectAs("site_chat", "site.chat");
     this.chatContext = this.chat.context;
     this.userId = this.site?.getUser()?.id;
     const checkRepetitionAndCache = this.checkRepetitionAndCache.bind(this);

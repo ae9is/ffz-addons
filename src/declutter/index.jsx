@@ -1,7 +1,5 @@
 "use strict";
-const { createElement, on, off } = FrankerFaceZ.utilities.dom;
-const { has, deep_copy } = FrankerFaceZ.utilities.object;
-const { Color } = FrankerFaceZ.utilities.color;
+const { createElement } = FrankerFaceZ.utilities.dom;
 import Logic, { DEFAULT_SETTINGS } from "./logic";
 
 /**
@@ -13,12 +11,8 @@ class Declutter extends Addon {
     super(...args);
     this.toggleEnabled = this.toggleEnabled.bind(this);
     this.inject("chat");
-    this.inject("chat.overrides");
-    this.inject("chat.actions");
     this.inject("settings");
     this.inject("i18n");
-    this.inject("site.fine");
-    this.injectAs("site_chat", "site.chat");
     this.register("logic", Logic, true);
 
     this.settings.add("addon.declutter.enabled", {
@@ -203,9 +197,7 @@ class Declutter extends Addon {
         container.insertBefore(inst._ffz_declutter_button, container.firstChild);
       }
     }
-    inst._ffz_declutter_icon.className = this.logic.enabled
-      ? "ffz-i-chat"
-      : "ffz-i-chat-empty";
+    inst._ffz_declutter_icon.className = this.logic.enabled ? "ffz-i-chat" : "ffz-i-chat-empty";
     inst._ffz_declutter_enabled_tip.classList.toggle("tw-mg-t-1", this.logic.enabled);
     inst._ffz_declutter_enabled_tip.textContent = this.logic.enabled
       ? this.i18n.t(
