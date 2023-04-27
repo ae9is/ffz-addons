@@ -12,6 +12,7 @@ class Declutter extends Addon {
     this.toggleEnabled = this.toggleEnabled.bind(this);
     this.inject("chat");
     this.inject("settings");
+    this.inject("site.fine"); // this.fine
     this.inject("i18n");
     this.register("logic", Logic, true);
 
