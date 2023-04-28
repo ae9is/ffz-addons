@@ -15,7 +15,7 @@ export const DEFAULT_SETTINGS = {
  *  and performs the actual chat filtering.
  */
 export default class Logic extends Addon {
-  cache;
+  cache = new Map(); // message -> [expiry timestamp]
   cacheEvictionTimer;
   chatContext;
   RepetitionCounter;
@@ -69,31 +69,19 @@ export default class Logic extends Addon {
   checkRepetitionAndCache = (message) => {
     const simThreshold = this.settings.get('addon.declutter.similarity_threshold') ?? DEFAULT_SETTINGS.similarity_threshold;
     const repThreshold = this.settings.get('addon.declutter.repetitions_threshold') ?? DEFAULT_SETTINGS.repetitions_threshold;
-    if(this.cache) {
-      this.cache.expire = Date.now() + this.cacheTtl;
-      let n = 1;
-      const messagesInCache = this.cache.messages;
-      for (let i = 0; i < messagesInCache.length; i++) {
-        if(this.compareTwoStrings(message, messagesInCache[i].msg) > simThreshold / 100) {
-          n++;
-        }
-        if (n >= repThreshold) {
-          break;
-        }
+    let n = 0;
+    for (const [msg, timestamps] of this.cache) {
+      if(this.compareTwoStrings(message, msg) > simThreshold / 100) {
+        n += timestamps?.length ?? 1;
       }
-      this.cache.messages.push({msg: message, expire: Date.now() + this.cacheTtl});
-      return n;
-    } else {
-      this.cache = {
-        messages: [
-          {
-            msg: message, expire: Date.now() + this.cacheTtl
-          }
-        ],
-        expire: Date.now() + this.cacheTtl
-      };
-      return 0;
+      if (n >= repThreshold) {
+        break;
+      }
     }
+    const existing = this.cache.get(message) ?? [];
+    this.cache.set(message, [...existing, Date.now() + this.cacheTtl]);
+    this.log.debug('(' + n + '): ' + message);
+    return n;
   }
 
   onEnable = () => {
@@ -104,10 +92,11 @@ export default class Logic extends Addon {
   }
 
   updateConstants = () => {
+    // Note any new value for cache TTL won't be picked up until re-enable
     this.cache_ttl = this.chat.context.get('addon.declutter.cache_ttl');
-    //Cache eviction will happen 10x per TTL, at least once every 10s, max once per second
+    // Cache eviction will happen 10x per TTL, at least once every 10s, max once per second
     this.startCacheEvictionTimer(
-      Math.min(Math.floor(this.cache_ttl / 10), 10)
+      Math.min(Math.max(1, Math.floor(this.cache_ttl / 10)), 10)
     );
   }
 
@@ -117,7 +106,7 @@ export default class Logic extends Addon {
     if (this.cacheEvictionTimer) {
       clearInterval(this.cacheEvictionTimer);
     }
-    this.cache = null;
+    this.cache = new Map();
   }
 
   startCacheEvictionTimer = (intervalSeconds) => {
@@ -126,12 +115,12 @@ export default class Logic extends Addon {
     }
     this.cacheEvictionTimer = setInterval(() => {
       this.log.debug("Running cache eviction cycle");
-      if (this.cache.expire < Date.now()) {
-        this.cache = null;
-      } else {
-        this.cache.messages = this.cache.messages.filter(msg => msg.expire > Date.now());
-        if (this.cache.messages.length === 0) {
-          this.cache = null;
+      for (const [msg, timestamps] of this.cache) {
+        const futureTimestamps = timestamps?.filter(time => time > Date.now()) ?? []
+        if (futureTimestamps.length === 0) {
+          this.cache.delete(msg);
+        } else {
+          this.cache.set(msg, futureTimestamps);
         }
       }
     }, intervalSeconds * 1000);
