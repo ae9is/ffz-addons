@@ -1,6 +1,7 @@
 "use strict";
 const { createElement } = FrankerFaceZ.utilities.dom;
-import Logic, { DEFAULT_SETTINGS } from "./logic";
+import Logic from "./logic";
+import { DEFAULT_SETTINGS } from "./constants";
 
 /**
  * This index addon file is responsible for user settings and 
