@@ -15,7 +15,7 @@ class Declutter extends Addon {
     this.inject("settings");
     this.inject("site.fine"); // this.fine
     this.inject("i18n");
-    this.register("logic", Logic, true);
+    this.register("logic", Logic, true); // name, module, inject_reference
 
     this.settings.add("addon.declutter.enabled", {
       default: DEFAULT_SETTINGS.enabled,
@@ -86,6 +86,9 @@ class Declutter extends Addon {
       }
     });
 
+    // workaround: logic starts enabled by default, which breaks checkEnabled()
+    this.logic.disable()
+
     this.set_enabled = null;
     this.ChatInput = this.fine.define("chat-input");
     this.logic.on(":enabled", this.updateButtons, this);
@@ -110,7 +113,7 @@ class Declutter extends Addon {
   }
 
   checkEnabled() {
-    const enabled = this.set_enabled ?? this.chat.context.get("addons.declutter.enabled");
+    const enabled = this.set_enabled ?? this.chat.context.get("addon.declutter.enabled");
     if (enabled && !this.logic.enabled) {
       this.logic.enable();
     } else if (!enabled && this.logic.enabled) {
