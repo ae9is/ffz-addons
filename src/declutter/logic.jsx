@@ -62,7 +62,12 @@ export default class Logic extends Addon {
     const repThreshold = this.settings.get('addon.declutter.repetitions_threshold') ?? DEFAULT_SETTINGS.repetitions_threshold;
     let n = 0;
     for (const [msg, timestamps] of this.cache) {
-      if(this.compareTwoStrings(message, msg) > simThreshold / 100) {
+      if (simThreshold === 100) {
+        if (message.toLowerCase() === msg.toLowerCase()) {
+          n += timestamps?.length ?? 1;
+        }
+      }
+      else if(this.compareTwoStrings(message.toLowerCase(), msg.toLowerCase()) > simThreshold / 100) {
         n += timestamps?.length ?? 1;
       }
       if (n >= repThreshold) {
