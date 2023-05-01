@@ -4,7 +4,7 @@ import Logic from "./logic";
 import { DEFAULT_SETTINGS } from "./constants";
 
 /**
- * This index addon file is responsible for user settings and 
+ * This index addon file is responsible for user settings and
  *  enables/disables the chat filtering "logic" addon.
  */
 class Declutter extends Addon {
@@ -24,8 +24,8 @@ class Declutter extends Addon {
         title: "Enable by Default",
         description:
           "Enable add-on by default. Otherwise, enable the add-on per channel via the toggle button next to chat settings",
-        component: "setting-check-box"
-      }
+        component: "setting-check-box",
+      },
     });
 
     this.settings.add("addon.declutter.similarity_threshold", {
@@ -37,8 +37,8 @@ class Declutter extends Addon {
           "Minimum similarity between 2 messages to count them as repetitions",
         component: "setting-text-box",
         process: "to_int",
-        bounds: [0, 100]
-      }
+        bounds: [0, 100],
+      },
     });
 
     this.settings.add("addon.declutter.repetitions_threshold", {
@@ -49,8 +49,8 @@ class Declutter extends Addon {
         description: "Amount of repetitions before the message is marked",
         component: "setting-text-box",
         process: "to_int",
-        bounds: [0]
-      }
+        bounds: [0],
+      },
     });
 
     this.settings.add("addon.declutter.ignore_mods", {
@@ -59,8 +59,8 @@ class Declutter extends Addon {
         path: "Add-Ons > Declutterer >> Mod Settings",
         title: "Ignore mods",
         description: "Do not limit messages by mods or the broadcaster",
-        component: "setting-check-box"
-      }
+        component: "setting-check-box",
+      },
     });
 
     this.settings.add("addon.declutter.force_enable_when_mod", {
@@ -69,8 +69,8 @@ class Declutter extends Addon {
         path: "Add-Ons > Declutterer >> Mod Settings",
         title: "Force enabled when Moderator",
         description: "Force filtering even in channels you are a moderator in",
-        component: "setting-check-box"
-      }
+        component: "setting-check-box",
+      },
     });
 
     this.settings.add("addon.declutter.cache_ttl", {
@@ -82,12 +82,12 @@ class Declutter extends Addon {
           "Amount of seconds for messages to stay in the cache. A long TTL leads to high RAM usage, especially in bigger channels",
         component: "setting-text-box",
         process: "to_int",
-        bounds: [1]
-      }
+        bounds: [1],
+      },
     });
 
     // workaround: logic starts enabled by default, which breaks checkEnabled()
-    this.logic.disable()
+    this.logic.disable();
 
     this.set_enabled = null;
     this.ChatInput = this.fine.define("chat-input");
@@ -96,7 +96,11 @@ class Declutter extends Addon {
   }
 
   onEnable() {
-    this.chat.context.on("changed:addon.declutter.enabled", this.checkEnabled, this);
+    this.chat.context.on(
+      "changed:addon.declutter.enabled",
+      this.checkEnabled,
+      this
+    );
     this.checkEnabled();
     this.ChatInput.on("mount", this.updateButton, this);
     this.ChatInput.on("update", this.updateButton, this);
@@ -104,7 +108,7 @@ class Declutter extends Addon {
   }
 
   async onDisable() {
-		await this.logic.disable();
+    await this.logic.disable();
     for (const inst of this.ChatInput.instances) {
       this.removeButton(inst);
     }
@@ -113,7 +117,8 @@ class Declutter extends Addon {
   }
 
   checkEnabled() {
-    const enabled = this.set_enabled ?? this.chat.context.get("addon.declutter.enabled");
+    const enabled =
+      this.set_enabled ?? this.chat.context.get("addon.declutter.enabled");
     if (enabled && !this.logic.enabled) {
       this.logic.enable();
     } else if (!enabled && this.logic.enabled) {
@@ -130,7 +135,7 @@ class Declutter extends Addon {
       }
     }
   }
-  
+
   toggleEnabled() {
     this.set_enabled = !this.logic.enabled;
     this.checkEnabled();
@@ -156,7 +161,9 @@ class Declutter extends Addon {
             </span>
           </button>
           <div class="ffz-il-tooltip ffz-il-tooltip--up ffz-il-tooltip--align-right">
-            {this.i18n.t("addon.pn.button.title", "Toggle Declutterer").replace("PrattleNot", "Declutterer")}
+            {this.i18n
+              .t("addon.pn.button.title", "Toggle Declutterer")
+              .replace("PrattleNot", "Declutterer")}
             {(inst._ffz_declutter_enabled_tip = <div></div>)}
           </div>
         </div>
@@ -167,16 +174,26 @@ class Declutter extends Addon {
         ".chat-input__buttons-container > div:last-child"
       );
       if (container) {
-        container.insertBefore(inst._ffz_declutter_button, container.firstChild);
+        container.insertBefore(
+          inst._ffz_declutter_button,
+          container.firstChild
+        );
       }
     }
-    inst._ffz_declutter_icon.className = this.logic.enabled ? "ffz-i-chat" : "ffz-i-chat-empty";
-    inst._ffz_declutter_enabled_tip.classList.toggle("tw-mg-t-1", this.logic.enabled);
+    inst._ffz_declutter_icon.className = this.logic.enabled
+      ? "ffz-i-chat"
+      : "ffz-i-chat-empty";
+    inst._ffz_declutter_enabled_tip.classList.toggle(
+      "tw-mg-t-1",
+      this.logic.enabled
+    );
     inst._ffz_declutter_enabled_tip.textContent = this.logic.enabled
-      ? this.i18n.t(
-          "addon.pn.button.enabled",
-          "Declutterer is currently enabled. Click to disable."
-        ).replace("PrattleNot", "Declutterer")
+      ? this.i18n
+          .t(
+            "addon.pn.button.enabled",
+            "Declutterer is currently enabled. Click to disable."
+          )
+          .replace("PrattleNot", "Declutterer")
       : null;
   }
 

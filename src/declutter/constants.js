@@ -7,4 +7,4 @@ export const DEFAULT_SETTINGS = {
   ignore_mods: true,
   force_enable_when_mod: false,
   cache_ttl: 30,
-}
+};
