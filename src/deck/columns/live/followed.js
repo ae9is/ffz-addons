@@ -1,7 +1,7 @@
 const {get, deep_copy} = FrankerFaceZ.utilities.object;
 
 import { LiveColumnBase } from '../../column-base';
-import { getLoader, cleanViewersCount, cleanTags } from '../../data';
+import { getLoader, cleanViewersCount, cleanTags, checkCosmetics } from '../../data';
 
 export default class Followed extends LiveColumnBase {
 
@@ -60,6 +60,9 @@ export default class Followed extends LiveColumnBase {
 	}
 
 	async load(first = 10, cursor = null) {
+		if ( first > 100 )
+			first = 100;
+
 		const data = await getLoader().queryApollo({
 			query: require('./followed.gql'),
 			variables: {
@@ -84,6 +87,7 @@ export default class Followed extends LiveColumnBase {
 					const copy = deep_copy(edge.node);
 					cleanViewersCount(copy.stream, edge.node.stream);
 					cleanTags(copy.stream);
+					checkCosmetics(copy);
 					items.push(copy);
 				}
 			}

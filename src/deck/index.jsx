@@ -39,6 +39,16 @@ class BrowseDeck extends Addon {
 			}
 		});
 
+		this.settings.add('deck.video-preview', {
+			default: false,
+			ui: {
+				path: 'Add-Ons > Deck >> Behavior',
+				title: 'Display video previews of live content.',
+				component: 'setting-check-box',
+				description: 'When this is enabled, the embedded player will be used in some situations to display previews of live channels. This is used primarily in tool-tips for the custom sidebar, but also works when hovering the mouse over a stream thumbnail.'
+			}
+		});
+
 		this.dialog = new Dialog(() => this.buildDialog());
 		this.dialog.exclusive = false;
 		this.dialog.maximized = true;
@@ -61,8 +71,6 @@ class BrowseDeck extends Addon {
 	async onEnable() {
 		this.NavBar = this.fine.define('nav-bar');
 
-		console.log('DECK STYLE URL', STYLE_URL);
-
 		document.head.appendChild(createElement('link', {
 			href: STYLE_URL,
 			rel: 'stylesheet',
@@ -73,13 +81,15 @@ class BrowseDeck extends Addon {
 		this.router.route('addons.deck', '/_deck/:tab?');
 		this.router.routeName('addons.deck', 'Deck');
 
-		const card_tip = this.tooltips.types['bd-sidebar-card'] = (target, tip) => {
+		const card_tip = (target, tip) => {
 			const shelf = target.__vue__?.$parent;
 			if ( ! shelf )
 				return null;
 
 			return shelf.renderTooltip(target, tip);
 		};
+
+		this.tooltips.define('bd-sidebar-card', card_tip);
 
 		let card_tip_open = 0;
 
@@ -102,6 +112,7 @@ class BrowseDeck extends Addon {
 		this.on('settings:changed:deck.auto-settings', val => this.updateSetting('open_settings', val));
 		this.on('settings:changed:layout.swap-sidebars', val => this.updateSetting('swap_sidebars', val));
 		this.on('settings:changed:directory.blocked-tags', val => this.updateSetting('blocked_tags', deep_copy(val || [])));
+		this.on('settings:changed:deck.video-preview', val => this.updateSetting('video_preview', val));
 
 		this.on('site.subpump:pubsub-message', this.onPubSub, this);
 
@@ -250,6 +261,7 @@ class BrowseDeck extends Addon {
 			settings: {
 				open_setting: this.settings.get('deck.auto-settings'),
 				swap_sidebars: this.settings.get('layout.swap-sidebars'),
+				video_preview: this.settings.get('deck.video-preview'),
 				show_avatars: true, // this.settings.get('directory.show-channel-avatars'),
 				hide_live: this.settings.get('directory.hide-live'),
 				hide_reruns: this.settings.get('directory.hide-vodcasts'),
@@ -260,6 +272,8 @@ class BrowseDeck extends Addon {
 				blocked_games: deep_copy(this.settings.provider.get('directory.game.blocked-games', [])),
 				blocked_tags: deep_copy(this.settings.get('directory.blocked-tags', []))
 			},
+
+			getFFZ: () => this,
 
 			tab_index: this.currentTab,
 
@@ -274,11 +288,11 @@ class BrowseDeck extends Addon {
 			saveTabs(data) {
 				t.settings.provider.set('deck-tabs', deep_copy(data));
 
-				t.log.info('save-tabs', data, is_side_vue, t._side_vue);
+				//t.log.info('save-tabs', data, is_side_vue, t._side_vue);
 
 				t.checkSidebar();
 
-				t.log.info('--', t._side_vue);
+				//t.log.info('--', t._side_vue);
 
 				if ( ! is_side_vue && t._side_vue )
 					t._side_vue.$children[0].tabs = deep_copy(data);
